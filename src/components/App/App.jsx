@@ -58,27 +58,22 @@ export function App() {
     fetchData();
   }, [searchQuery, page]);
 
-  const handleFormSubmit = (searchQuery) => {
-    if (searchQuery === searchQuery) {
+  const handleFormSubmit = (search) => {
+    if (search === searchQuery) {
       return;
     }
-    resetState();
-    setSearchQuery(searchQuery);
-  };
-
-  const handleSelectedImage = (largeImageUrl, tags) => {
-    setSelectedImage(largeImageUrl);
-    setAlt(tags);
-  };
-
-  const resetState = () => {
-    setSearchQuery('');
+    setSearchQuery(search);
     setPage(1);
     setImages([]);
     setSelectedImage(null);
     setAlt(null);
     setStatus('idle');
     setError(null);
+  };
+
+  const handleSelectedImage = (largeImageUrl, tags) => {
+    setSelectedImage(largeImageUrl);
+    setAlt(tags);
   };
 
   const loadMore = () => {
