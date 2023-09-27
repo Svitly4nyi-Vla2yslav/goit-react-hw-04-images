@@ -1,8 +1,4 @@
-
-// import { ToastContainer, toast } from 'react-toastify';
-import Notiflix from 'notiflix';
-import PropTypes from 'prop-types';
-import React, { Component } from 'react'
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { Searchbar } from 'components/Searchbar/Searchbar';
 import { FetchPixabay } from 'components/Api/PixabayApi';
@@ -10,40 +6,38 @@ import { ImageGallery } from 'components/ImageGallery/ImageGallery';
 import { Loader } from 'components/Loader/Loader';
 import { Button } from 'components/Button/Button';
 import { Modal } from 'components/Modal/Modal';
+import Notiflix from 'notiflix';
 
-export class App extends Component {
-  static propTypes = { searchQuery: PropTypes.string };
-  state = {
-    searchQuery: '',
-    images: [],
-    page: 1,
-    selectedImage: null,
-    alt: null,
-    status: 'idle',
-    error: null,
-  };
-  totalHits = null;
+export function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [alt, setAlt] = useState(null);
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState(null);
+  const [totalHits, setTotalHits] = useState(null);
 
-  async componentDidUpdate(_, prevState) {
-    const { page, searchQuery } = this.state;
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.setState({ status: 'pending' });
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!searchQuery || page < 1) return;
+
+      setStatus('pending');
 
       try {
         const imageData = await FetchPixabay(searchQuery, page);
-        this.totalHits = imageData.total;
+        setTotalHits(imageData.total);
         const imagesHits = imageData.hits;
+
         if (!imagesHits.length) {
           Notiflix.Notify.warning(
             'No results were found for your search, please try something else.',
-            {
-              timeout: 6000,
-            },);
+            { timeout: 6000 }
+          );
         }
-        this.setState(({ images }) => ({
-          images: [...images, ...imagesHits],
-          status: 'resolved',
-        }));
+
+        setImages((prevImages) => [...prevImages, ...imagesHits]);
+        setStatus('resolved');
 
         if (page > 1) {
           const CARD_HEIGHT = 300;
@@ -55,78 +49,67 @@ export class App extends Component {
       } catch (error) {
         Notiflix.Notify.info(`Sorry something went wrong. ${error.message}`, {
           timeout: 6000,
-        },);
-        this.setState({ status: 'rejected' });
+        });
+        setError(error);
+        setStatus('rejected');
       }
-    }
-  }
-  handleFormSubmit = searchQuery => {
-    if (this.state.searchQuery === searchQuery) {
+    };
+
+    fetchData();
+  }, [searchQuery, page]);
+
+  const handleFormSubmit = (searchQuery) => {
+    if (searchQuery === searchQuery) {
       return;
     }
-    this.resetState();
-    this.setState({ searchQuery });
-  };
-  handleSelectedImage = (largeImageUrl, tags) => {
-    this.setState({
-      selectedImage: largeImageUrl,
-      alt: tags,
-    });
+    resetState();
+    setSearchQuery(searchQuery);
   };
 
-  resetState = () => {
-    this.setState({
-      searchQuery: '',
-      page: 1,
-      images: [],
-      selectedImage: null,
-      alt: null,
-      status: 'idle',
-    });
+  const handleSelectedImage = (largeImageUrl, tags) => {
+    setSelectedImage(largeImageUrl);
+    setAlt(tags);
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const resetState = () => {
+    setSearchQuery('');
+    setPage(1);
+    setImages([]);
+    setSelectedImage(null);
+    setAlt(null);
+    setStatus('idle');
+    setError(null);
   };
 
-  closeModal = () => {
-    this.setState({
-      selectedImage: null,
-    });
+  const loadMore = () => {
+    setPage((prevPage) => prevPage + 1);
   };
 
-  render() {
-    const { images, status, selectedImage, alt, error } = this.state;
-    return (
-      <div className='App'>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-       
-        {status === 'pending' && <Loader />}
-        {error && (
-          <h1 style={{ color: 'orangered', textAlign: 'center' }}>
-            {error.message}
-          </h1>
-        )}
-        {images.length > 0 && (
-          <ImageGallery
-            images={images}
-            selectedImage={this.handleSelectedImage}
-          />
-        )}
-        {images.length > 0 && images.length !== this.totalHits && (
-          <Button onClick={this.loadMore} />
-        )}
-        {selectedImage && (
-          <Modal
-            selectedImage={selectedImage}
-            tags={alt}
-            onClose={this.closeModal}
-          />
-        )}
-      </div>
-    );
-  }
+  const closeModal = () => {
+    setSelectedImage(null);
+  };
+
+  return (
+    <div className="App">
+      <Searchbar onSubmit={handleFormSubmit} />
+
+      {status === 'pending' && <Loader />}
+      {error && (
+        <h1 style={{ color: 'orangered', textAlign: 'center' }}>
+          {error.message}
+        </h1>
+      )}
+      {images.length > 0 && (
+        <ImageGallery images={images} selectedImage={handleSelectedImage} />
+      )}
+      {images.length > 0 && images.length !== totalHits && (
+        <Button onClick={loadMore} />
+      )}
+      {selectedImage && (
+        <Modal selectedImage={selectedImage} tags={alt} onClose={closeModal} />
+      )}
+    </div>
+  );
 }
-// API_KEY = '38650686-211065fda926dbe73f41f5be1';
+
+

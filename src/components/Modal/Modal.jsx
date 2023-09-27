@@ -1,46 +1,45 @@
-import { Component } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
-import './Modal.css'
+import './Modal.css';
 
 const modalRoot = document.querySelector('#modal-root');
 
-export class Modal extends Component {
-    static propTypes = {
-        selectedImage: PropTypes.string,
-        tags: PropTypes.string,
-        onClose: PropTypes.func,
+export function Modal({ selectedImage, tags, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Escape') {
+        onClose();
+      }
     };
 
-    componentDidMount() {
-        window.addEventListener('keydown', this.handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
 
-    componentWillUnmount() {
-        window.removeEventListener('keydown', this.handleKeyDown);
-    }
-
-    handleKeyDown = e => {
-        if (e.code === 'Escape') {
-            this.props.onClose();
-        }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
     };
+  }, [onClose]);
 
-    handleBackdropClick = e => {
-        if (e.target === e.currentTarget) {
-            this.props.onClose();
-        }
-    };
-    render() {
-        const { selectedImage, tags } = this.props;
-
-        return createPortal(
-            <div className="Overlay" onClick={this.handleBackdropClick}>
-                <div className="Modal">
-                    <img src={selectedImage} alt={tags} />
-                </div>
-            </div>,
-            modalRoot
-        );
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
     }
+  };
+
+  return createPortal(
+    <div className="Overlay" onClick={handleBackdropClick}>
+      <div className="Modal">
+        <img src={selectedImage} alt={tags} />
+      </div>
+    </div>,
+    modalRoot
+  );
 }
+
+Modal.propTypes = {
+  selectedImage: PropTypes.string,
+  tags: PropTypes.string,
+  onClose: PropTypes.func,
+};
+
+
